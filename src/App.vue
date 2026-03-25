@@ -61,11 +61,16 @@ function fmtDurLong(sec: number): string {
 // =============================================
 const BILI_API = 'https://api.bilibili.com'
 
+// 优先使用通过环境变量配置的自有 Cloudflare Worker 代理（推荐）
+// 在项目根目录创建 .env.local 文件写入：VITE_BILI_PROXY=https://xxx.workers.dev/
+// GitHub Actions 中在仓库 Settings → Secrets → Actions 添加同名 Secret 并在 workflow 里注入
+const CUSTOM_PROXY: string = (import.meta.env.VITE_BILI_PROXY as string | undefined) ?? ''
+
 const CORS_PROXIES = [
-  '',
+  ...(CUSTOM_PROXY ? [CUSTOM_PROXY + '?url='] : []),
+  '',  // 直连（在 localhost 开发时有效）
   'https://corsproxy.io/?url=',
   'https://api.allorigins.win/raw?url=',
-  'https://cors-anywhere.herokuapp.com/',
 ]
 
 async function apiFetch<T = unknown>(url: string): Promise<T> {
@@ -408,7 +413,8 @@ function onThumbError(e: Event) {
         <p class="error-text">{{ error }}</p>
         <div class="error-help">
           <strong>常见原因：</strong><br />
-          • 网络波动或 B站 API 限流，请稍后重试<br />
+          • B站 API 限制跨域访问，公共代理可能不稳定——建议部署 Cloudflare Worker（见项目 <code>cloudflare-worker.js</code>）<br />
+          • 网络波动或请求超时，请稍后重试<br />
           • BV号 / 链接格式有误<br />
           • 视频已被删除或设置了权限
         </div>
