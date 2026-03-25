@@ -65,24 +65,33 @@ const CORS_PROXIES = [
   '',
   'https://corsproxy.io/?url=',
   'https://api.allorigins.win/raw?url=',
+  'https://cors-anywhere.herokuapp.com/',
 ]
 
 async function apiFetch<T = unknown>(url: string): Promise<T> {
   let lastErr: unknown
   for (let i = 0; i < CORS_PROXIES.length; i++) {
-    const fullUrl = i === 0 ? url : CORS_PROXIES[i] + encodeURIComponent(url)
+    const proxyPrefix = CORS_PROXIES[i]
+    const fullUrl = proxyPrefix ? proxyPrefix + encodeURIComponent(url) : url
+    const ctrl = new AbortController()
+    const timer = setTimeout(
+      () => ctrl.abort(new DOMException('请求超时', 'TimeoutError')),
+      10000,
+    )
     try {
-      const ctrl = new AbortController()
-      const timer = setTimeout(() => ctrl.abort(), 12000)
-      const res = await fetch(fullUrl, { signal: ctrl.signal })
+      const res = await fetch(fullUrl, { signal: ctrl.signal, credentials: 'omit' })
       clearTimeout(timer)
       if (!res.ok) continue
       return (await res.json()) as T
-    } catch (e) {
-      lastErr = e
+    } catch (e: unknown) {
+      clearTimeout(timer)
+      const isTimeout =
+        e instanceof DOMException &&
+        (e.name === 'AbortError' || e.name === 'TimeoutError')
+      lastErr = isTimeout ? new Error('请求超时，请检查网络连接后重试') : e
     }
   }
-  throw lastErr ?? new Error('所有请求方式均失败')
+  throw lastErr ?? new Error('所有请求方式均失败，请稍后重试')
 }
 
 async function fetchViewInfo(bvid: string | null, aid: string | null) {
