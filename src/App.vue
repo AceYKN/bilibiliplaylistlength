@@ -200,7 +200,6 @@ const loading     = ref(false)
 const loadingText = ref('正在获取视频信息…')
 const error       = ref<string | null>(null)
 const result      = ref<ResultData | null>(null)
-const dailyCount  = ref(2)
 const epExpanded  = ref(false)
 
 const isDark = ref(
@@ -222,12 +221,11 @@ function toggleDark() {
 // =============================================
 const stats = computed(() => {
   if (!result.value) return []
-  const { totalSec, avgSec, minSec, maxSec } = result.value
+  const { avgSec, minSec, maxSec } = result.value
   return [
-    { val: fmtDur(totalSec), lbl: '总时长' },
-    { val: fmtDur(avgSec),   lbl: '平均每集' },
-    { val: fmtDur(minSec),   lbl: '最短' },
-    { val: fmtDur(maxSec),   lbl: '最长' },
+    { val: fmtDur(avgSec), lbl: '平均每集' },
+    { val: fmtDur(minSec), lbl: '最短' },
+    { val: fmtDur(maxSec), lbl: '最长' },
   ]
 })
 
@@ -255,23 +253,39 @@ const speedPlans = computed(() => {
   })
 })
 
-const days = computed(() =>
-  result.value
-    ? Math.ceil(result.value.videos.length / Math.max(1, dailyCount.value || 1))
-    : 0,
-)
+const COLLAPSED_COUNT = 8
 
-const dailyPlans = computed(() => {
-  if (!result.value) return []
-  const avgSec = result.value.avgSec
-  const daily  = Math.max(1, dailyCount.value || 1)
-  return [
-    { rate: 0.75, label: '0.75x 速' },
-    { rate: 1.0,  label: '1x 速'   },
-    { rate: 1.5,  label: '1.5x 速' },
-    { rate: 2.0,  label: '2x 速'   },
-  ].map((sp) => ({ ...sp, time: fmtDur((daily * avgSec) / sp.rate) }))
+const DAILY_HOUR_OPTIONS = [
+  { label: '30 分钟',  sec: 1800  },
+  { label: '1 小时',   sec: 3600  },
+  { label: '1.5 小时', sec: 5400  },
+  { label: '2 小时',   sec: 7200  },
+  { label: '3 小时',   sec: 10800 },
+]
+const DAILY_SPEED_OPTIONS = [
+  { label: '0.75x', rate: 0.75 },
+  { label: '1x',    rate: 1.0  },
+  { label: '1.25x', rate: 1.25 },
+  { label: '1.5x',  rate: 1.5  },
+  { label: '2x',    rate: 2.0  },
+]
+
+const dailyHourIdx  = ref(1)  // 默认 1小时
+const dailySpeedIdx = ref(3)  // 默认 1.5x
+
+const dailyResult = computed(() => {
+  if (!result.value) return 0
+  const speedOpt = DAILY_SPEED_OPTIONS[dailySpeedIdx.value]
+  const hourOpt  = DAILY_HOUR_OPTIONS[dailyHourIdx.value]
+  if (!speedOpt || !hourOpt) return 0
+  return Math.ceil(result.value.totalSec / speedOpt.rate / hourOpt.sec)
 })
+
+const displayedVideos = computed(() =>
+  result.value
+    ? (epExpanded.value ? result.value.videos : result.value.videos.slice(0, COLLAPSED_COUNT))
+    : [],
+)
 
 // =============================================
 //  Actions
@@ -463,52 +477,51 @@ function onThumbError(e: Event) {
         <!-- 时长统计 -->
         <div class="card">
           <div class="card-title">时长统计</div>
+          <div class="total-hero">
+            <div class="total-hero-val">{{ fmtDur(result.totalSec) }}</div>
+            <div class="total-hero-lbl">共 {{ result.totalDurLong }}</div>
+          </div>
           <div class="stats-grid">
             <div v-for="stat in stats" :key="stat.lbl" class="stat-item">
               <div class="stat-val">{{ stat.val }}</div>
               <div class="stat-lbl">{{ stat.lbl }}</div>
             </div>
           </div>
-          <div class="stats-total-row">总计：<strong>{{ result.totalDurLong }}</strong></div>
         </div>
 
         <!-- 倍速时长 -->
         <div class="card">
           <div class="card-title">倍速时长</div>
-          <div class="speed-grid">
+          <div class="speed-table">
             <div
               v-for="sp in speedPlans"
               :key="sp.label"
-              class="speed-item"
+              class="speed-row"
               :class="{ hl: sp.hl }"
             >
-              <div class="speed-rate">{{ sp.label }}</div>
-              <div class="speed-dur">{{ sp.dur }}</div>
-              <div class="speed-note">{{ sp.noteText }}</div>
+              <span class="speed-row-rate">{{ sp.label }}</span>
+              <span class="speed-row-dur">{{ sp.dur }}</span>
+              <span class="speed-row-note">{{ sp.noteText }}</span>
             </div>
           </div>
         </div>
 
-        <!-- 追番计划 -->
+        <!-- 观看计划 -->
         <div class="card">
-          <div class="card-title">追番计划</div>
-          <div class="daily-controls">
-            每天看
-            <input
-              v-model.number="dailyCount"
-              type="number"
-              class="daily-num-input"
-              min="1"
-              max="9999"
-            />
-            集，共需 <span class="daily-days-highlight">{{ days }}</span> 天看完
+          <div class="card-title">观看计划</div>
+          <div class="plan-controls">
+            <span>如果每天观看</span>
+            <select v-model.number="dailyHourIdx" class="plan-select">
+              <option v-for="(opt, i) in DAILY_HOUR_OPTIONS" :key="i" :value="i">{{ opt.label }}</option>
+            </select>
+            <span>，以</span>
+            <select v-model.number="dailySpeedIdx" class="plan-select">
+              <option v-for="(opt, i) in DAILY_SPEED_OPTIONS" :key="i" :value="i">{{ opt.label }}</option>
+            </select>
+            <span>倍速播放</span>
           </div>
-          <div class="daily-grid">
-            <div v-for="dp in dailyPlans" :key="dp.label" class="daily-item">
-              <div class="di-speed">{{ dp.label }}</div>
-              <div class="di-time">{{ dp.time }}</div>
-              <div class="di-label">每日用时</div>
-            </div>
+          <div class="plan-result">
+            您将在 <span class="plan-days">{{ dailyResult }}</span> 天内看完
           </div>
         </div>
 
@@ -516,12 +529,16 @@ function onThumbError(e: Event) {
         <div class="card">
           <div class="ep-header">
             <div class="card-title">视频列表</div>
-            <button class="ep-toggle-btn" @click="epExpanded = !epExpanded">
-              {{ epExpanded ? '收起列表' : '展开全部' }}
+            <button
+              v-if="result.videos.length > COLLAPSED_COUNT"
+              class="ep-toggle-btn"
+              @click="epExpanded = !epExpanded"
+            >
+              {{ epExpanded ? '收起列表' : `展开全部 (${result.videos.length})` }}
             </button>
           </div>
-          <div class="ep-list" :class="{ expanded: epExpanded }">
-            <div v-for="(v, i) in result.videos" :key="i" class="ep-item">
+          <div class="ep-list">
+            <div v-for="(v, i) in displayedVideos" :key="i" class="ep-item">
               <span class="ep-num">{{ i + 1 }}.</span>
               <span class="ep-title" :title="v.title">{{ v.title }}</span>
               <span class="ep-dur">{{ fmtDur(v.duration) }}</span>
@@ -758,104 +775,118 @@ body {
 /* ===========================
    统计
 =========================== */
+.total-hero {
+  text-align: center;
+  background: linear-gradient(135deg, #ffeef4 0%, #e3f4fb 100%);
+  border-radius: 12px;
+  padding: 20px 16px 14px;
+  margin-bottom: 12px;
+}
+
+.total-hero-val {
+  font-size: 44px;
+  font-weight: 800;
+  color: var(--pink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -1.5px;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.total-hero-lbl {
+  font-size: 13px;
+  color: var(--text-sub);
+}
+
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
-  margin-top: 4px;
 }
 
 .stat-item {
   background: var(--bg);
   border-radius: 10px;
-  padding: 14px 8px;
+  padding: 12px 8px;
   text-align: center;
 }
 
 .stat-val {
-  font-size: 22px;
+  font-size: 17px;
   font-weight: 700;
-  color: var(--pink);
+  color: var(--text);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.3px;
   margin-bottom: 4px;
-  line-height: 1.1;
+  line-height: 1.2;
 }
 
 .stat-lbl  { font-size: 12px; color: var(--text-sub); }
 
-.stats-total-row {
-  margin-top: 12px;
-  text-align: center;
-  font-size: 13px;
-  color: var(--text-sub);
-}
-
 /* ===========================
    倍速
 =========================== */
-.speed-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-top: 4px;
+.speed-table { display: flex; flex-direction: column; gap: 2px; }
+
+.speed-row {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 8px;
 }
 
-.speed-item {
-  background: var(--bg);
-  border-radius: 10px;
-  padding: 14px 8px;
-  text-align: center;
-}
+.speed-row.hl { background: linear-gradient(90deg, #ffeef4 0%, #e3f4fb 100%); }
+.speed-row.hl .speed-row-rate { color: var(--pink); }
 
-.speed-item.hl {
-  background: linear-gradient(135deg, #ffeef4 0%, #e3f4fb 100%);
-}
-
-.speed-rate { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
-.speed-dur  { font-size: 14px; font-weight: 600; color: var(--blue); font-variant-numeric: tabular-nums; margin-bottom: 3px; }
-.speed-note { font-size: 11px; color: var(--text-sub); min-height: 14px; }
+.speed-row-rate { width: 52px; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+.speed-row-dur  { flex: 1; font-size: 14px; font-weight: 600; color: var(--blue); font-variant-numeric: tabular-nums; }
+.speed-row-note { font-size: 12px; color: var(--text-sub); text-align: right; min-width: 80px; }
 
 /* ===========================
-   追番计划
+   观看计划
 =========================== */
-.daily-controls {
+.plan-controls {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
   font-size: 14px;
-  color: var(--text-sub);
-  margin-bottom: 14px;
+  color: var(--text);
+  margin-bottom: 16px;
 }
 
-.daily-num-input {
-  width: 64px;
+.plan-select {
   height: 36px;
   border: 2px solid var(--border);
   border-radius: 6px;
-  padding: 0 8px;
-  font-size: 15px;
-  font-weight: 700;
-  text-align: center;
+  padding: 0 10px;
+  font-size: 14px;
+  font-weight: 600;
   outline: none;
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
   transition: border-color 0.2s;
 }
 
-.daily-num-input:focus { border-color: var(--pink); }
+.plan-select:focus { border-color: var(--pink); }
 
-.daily-days-highlight { font-size: 20px; font-weight: 700; color: var(--pink); }
-
-.daily-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
+.plan-result {
+  text-align: center;
+  font-size: 15px;
+  color: var(--text-sub);
+  padding: 14px;
+  background: var(--bg);
+  border-radius: 10px;
 }
 
-.daily-item { background: var(--bg); border-radius: 10px; padding: 12px 6px; text-align: center; }
-.di-speed   { font-size: 12px; color: var(--text-sub); margin-bottom: 4px; }
-.di-time    { font-size: 16px; font-weight: 700; color: var(--blue); margin-bottom: 3px; }
-.di-label   { font-size: 11px; color: var(--text-sub); }
+.plan-days {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--pink);
+  font-variant-numeric: tabular-nums;
+  margin: 0 4px;
+}
 
 /* ===========================
    视频列表
@@ -882,8 +913,7 @@ body {
 
 .ep-toggle-btn:hover { background: #e3f4fb; }
 
-.ep-list         { max-height: 340px; overflow-y: auto; }
-.ep-list.expanded { max-height: none; }
+.ep-list { }
 
 .ep-item {
   display: flex;
@@ -953,15 +983,19 @@ html.dark .search-input:focus { background: #2e2e2e; }
 html.dark .tip-tag           { background: #2a2a2a; }
 html.dark .tip-tag:hover     { background: #3a2328; color: var(--pink); }
 
-html.dark .daily-num-input {
+html.dark .plan-select {
   background: #262626;
   color: var(--text);
 }
 
 html.dark .error-help        { background: #2a1818; }
 
-html.dark .speed-item.hl {
+html.dark .total-hero {
   background: linear-gradient(135deg, #3a1e26 0%, #1a2e38 100%);
+}
+
+html.dark .speed-row.hl {
+  background: linear-gradient(90deg, #3a1e26 0%, #1a2e38 100%);
 }
 
 html.dark .ep-toggle-btn:hover { background: #1a2e38; }
@@ -980,10 +1014,8 @@ html.dark .ep-toggle-btn:hover { background: #1a2e38; }
   .vi-wrap  { flex-direction: column; }
   .vi-thumb { width: 100%; height: 180px; }
 
-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
-  .speed-grid { grid-template-columns: repeat(2, 1fr); }
-  .daily-grid { grid-template-columns: repeat(2, 1fr); }
-
-  .stat-val { font-size: 18px; }
+  .total-hero-val { font-size: 32px; }
+  .stats-grid { grid-template-columns: repeat(3, 1fr); }
+  .plan-controls { font-size: 13px; }
 }
 </style>
