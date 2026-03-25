@@ -7,7 +7,7 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 // https://vite.dev/config/
 // 部署到 GitHub Pages 时，将 base 改为 '/仓库名/' 例如 '/bilibiliplaylistlength/'
 export default defineConfig({
-  base: './',
+  base: '/bilibiliplaylistlength/',
   plugins: [
     vue(),
     vueDevTools(),
