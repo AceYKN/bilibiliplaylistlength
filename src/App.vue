@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watchEffect } from 'vue'
 
 // =============================================
 //  Types
@@ -203,6 +203,20 @@ const result      = ref<ResultData | null>(null)
 const dailyCount  = ref(2)
 const epExpanded  = ref(false)
 
+const isDark = ref(
+  localStorage.getItem('theme') === 'dark' ||
+  (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches),
+)
+
+watchEffect(() => {
+  document.documentElement.classList.toggle('dark', isDark.value)
+})
+
+function toggleDark() {
+  isDark.value = !isDark.value
+  localStorage.setItem('theme', isDark.value ? 'dark' : 'light')
+}
+
 // =============================================
 //  Computed
 // =============================================
@@ -370,6 +384,9 @@ function onThumbError(e: Event) {
 
 <template>
   <div class="app">
+    <button class="theme-toggle" :title="isDark ? '切换到亮色' : '切换到深色'" @click="toggleDark">
+      {{ isDark ? '☀️' : '🌙' }}
+    </button>
     <header class="header">
       <div class="header-icon">⏱</div>
       <h1>B站视频时长计算器</h1>
@@ -886,6 +903,68 @@ body {
    页脚
 =========================== */
 .footer { text-align: center; padding: 32px 0 8px; font-size: 12px; color: #bbb; }
+
+/* ===========================
+   深色模式切换按钮
+=========================== */
+.theme-toggle {
+  position: fixed;
+  top: 16px;
+  right: 20px;
+  z-index: 999;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--card);
+  box-shadow: var(--shadow);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  line-height: 1;
+  padding: 0;
+}
+
+.theme-toggle:hover  { transform: scale(1.1); }
+.theme-toggle:active { transform: scale(0.95); }
+
+/* ===========================
+   深色模式变量覆盖
+=========================== */
+html.dark {
+  --bg:       #141414;
+  --card:     #1e1e1e;
+  --text:     #e0e0e0;
+  --text-sub: #999999;
+  --border:   #333333;
+  --shadow:   0 2px 12px rgba(0, 0, 0, 0.5);
+}
+
+html.dark .search-input {
+  background: #262626;
+  color: var(--text);
+}
+
+html.dark .search-input:focus { background: #2e2e2e; }
+
+html.dark .tip-tag           { background: #2a2a2a; }
+html.dark .tip-tag:hover     { background: #3a2328; color: var(--pink); }
+
+html.dark .daily-num-input {
+  background: #262626;
+  color: var(--text);
+}
+
+html.dark .error-help        { background: #2a1818; }
+
+html.dark .speed-item.hl {
+  background: linear-gradient(135deg, #3a1e26 0%, #1a2e38 100%);
+}
+
+html.dark .ep-toggle-btn:hover { background: #1a2e38; }
 
 /* ===========================
    响应式
