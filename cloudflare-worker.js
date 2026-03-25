@@ -1,84 +1,82 @@
 /**
  * Cloudflare Worker — B站 API CORS 代理
  *
- * 部署步骤：
- * 1. 注册/登录 https://dash.cloudflare.com
- * 2. 进入 Workers & Pages → Create → Create Worker
- * 3. 将本文件全部内容粘贴到编辑器 → Save and Deploy
- * 4. 复制分配的 URL（形如 https://xxx.xxx.workers.dev）
- * 5. 在本项目根目录创建 .env.local 文件，写入：
- *    VITE_BILI_PROXY=https://xxx.xxx.workers.dev/
- * 6. 重新构建并部署即可（GitHub Actions 在 Secrets 中添加同名变量）
+ * ★ 部署方法（Web 编辑器，最简单）：
+ * 1. 登录 https://dash.cloudflare.com
+ * 2. 左侧 Workers & Pages → Create → 选 "Hello World" 模板 → Create
+ * 3. 点击右上角 "Edit code"
+ * 4. 全选编辑器内容，粘贴本文件全部内容 → Deploy
+ * 5. 复制 Worker URL（形如 https://bilibiliplaylistlength.你的名字.workers.dev）
+ * 6. 在本项目根目录创建 .env.local，写入：
+ *      VITE_BILI_PROXY=https://bilibiliplaylistlength.你的名字.workers.dev
+ *    （注意：结尾不加斜杠）
+ * 7. GitHub Actions：仓库 Settings → Secrets → Actions → New secret
+ *      名称: VITE_BILI_PROXY  值: 同上
+ *    并在 .github/workflows/deploy.yml 的 "npm run build" 步骤下加：
+ *      env:
+ *        VITE_BILI_PROXY: ${{ secrets.VITE_BILI_PROXY }}
  */
 
 const ALLOWED_HOSTS = ['api.bilibili.com', 'space.bilibili.com']
 
-export default {
-  async fetch(request) {
-    // CORS 预检
-    if (request.method === 'OPTIONS') {
-      return new Response(null, {
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, OPTIONS',
-          'Access-Control-Max-Age': '86400',
-        },
-      })
-    }
-
-    const incoming = new URL(request.url)
-    const targetRaw = incoming.searchParams.get('url')
-
-    if (!targetRaw) {
-      return new Response(JSON.stringify({ error: 'Missing url param' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      })
-    }
-
-    let target
-    try {
-      target = new URL(targetRaw)
-    } catch {
-      return new Response(JSON.stringify({ error: 'Invalid url param' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      })
-    }
-
-    // 安全：只允许代理 B站 API 域名，防止 SSRF 滥用
-    if (!ALLOWED_HOSTS.includes(target.hostname)) {
-      return new Response(JSON.stringify({ error: 'Forbidden host' }), {
-        status: 403,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      })
-    }
-
-    try {
-      const resp = await fetch(target.toString(), {
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-          Referer: 'https://www.bilibili.com',
-          Origin: 'https://www.bilibili.com',
-        },
-        redirect: 'follow',
-      })
-
-      const body = await resp.text()
-      return new Response(body, {
-        status: resp.status,
-        headers: {
-          'Content-Type': 'application/json; charset=utf-8',
-          'Access-Control-Allow-Origin': '*',
-          'Cache-Control': 'no-store',
-        },
-      })
-    } catch (err) {
-      return new Response(JSON.stringify({ error: String(err) }), {
-        status: 502,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
-      })
-    }
-  },
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Max-Age': '86400',
 }
+
+function jsonResp(body, status) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+  })
+}
+
+async function handleRequest(request) {
+  if (request.method === 'OPTIONS') {
+    return new Response(null, { headers: CORS_HEADERS })
+  }
+
+  const { searchParams } = new URL(request.url)
+  const targetRaw = searchParams.get('url')
+  if (!targetRaw) return jsonResp({ error: 'Missing url param' }, 400)
+
+  let target
+  try {
+    target = new URL(targetRaw)
+  } catch (_) {
+    return jsonResp({ error: 'Invalid url param' }, 400)
+  }
+
+  // 安全：仅允许代理 B站 API 域名，防止 SSRF 滥用
+  if (!ALLOWED_HOSTS.includes(target.hostname)) {
+    return jsonResp({ error: 'Forbidden host' }, 403)
+  }
+
+  try {
+    const resp = await fetch(target.toString(), {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36',
+        'Referer': 'https://www.bilibili.com/',
+        'Origin': 'https://www.bilibili.com',
+      },
+      redirect: 'follow',
+    })
+    const body = await resp.text()
+    return new Response(body, {
+      status: resp.status,
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-store',
+        ...CORS_HEADERS,
+      },
+    })
+  } catch (err) {
+    return jsonResp({ error: String(err) }, 502)
+  }
+}
+
+// Service Worker 格式（兼容 Cloudflare Web 编辑器默认模式）
+addEventListener('fetch', event => {
+  event.respondWith(handleRequest(event.request))
+})
