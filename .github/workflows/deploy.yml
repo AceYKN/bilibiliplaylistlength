@@ -35,6 +35,8 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          VITE_BILI_PROXY: ${{ secrets.VITE_BILI_PROXY }}
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
