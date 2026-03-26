@@ -15,6 +15,8 @@ interface ResultData {
   type: string
   thumbnail: string
   uploader: string
+  aid?: string
+  bvid?: string
   videos: VideoItem[]
   totalSec: number
   avgSec: number
@@ -233,22 +235,20 @@ const speedPlans = computed(() => {
   if (!result.value) return []
   const total = result.value.totalSec
   return [
-    { rate: 0.5,  label: '0.5x',  note: '慢速',   hl: false },
-    { rate: 0.75, label: '0.75x', note: '',        hl: false },
-    { rate: 1.0,  label: '1x',    note: '正常',   hl: true  },
-    { rate: 1.25, label: '1.25x', note: '',        hl: false },
-    { rate: 1.5,  label: '1.5x',  note: '推荐',   hl: false },
-    { rate: 2.0,  label: '2x',    note: '两倍速',  hl: false },
+    { rate: 0.5,  label: '0.5x',  hl: false },
+    { rate: 0.75, label: '0.75x', hl: false },
+    { rate: 1.0,  label: '1x',    hl: true  },
+    { rate: 1.25, label: '1.25x', hl: false },
+    { rate: 1.5,  label: '1.5x',  hl: false },
+    { rate: 2.0,  label: '2x',    hl: false },
   ].map((sp) => {
     const dur     = total / sp.rate
     const saved   = total - dur
-    const noteText = sp.note
-      ? sp.note
-      : saved > 0
-        ? `节省 ${fmtDur(saved)}`
-        : saved < 0
-          ? `多花 ${fmtDur(-saved)}`
-          : ''
+    const noteText = saved > 0
+      ? `节省 ${fmtDur(saved)}`
+      : saved < 0
+        ? `多用 ${fmtDur(-saved)}`
+        : '原速播放'
     return { ...sp, dur: fmtDur(dur), noteText }
   })
 })
@@ -312,6 +312,7 @@ async function handleSearch() {
   try {
     let videos: VideoItem[] = []
     let title = '', type = '', thumbnail = '', uploader = ''
+    let aid = '', bvid = ''
 
     if (parsed.kind === 'season') {
       videos = await fetchAllSeasonVideos(parsed.mid!, parsed.seasonId!, onProgress)
@@ -322,11 +323,13 @@ async function handleSearch() {
       title  = `系列 (series_id: ${parsed.seriesId})`
       type   = '系列'
     } else {
-      const bvid = parsed.kind === 'bv' ? parsed.id! : null
-      const aid  = parsed.kind === 'av' ? parsed.id! : null
-      const info = await fetchViewInfo(bvid, aid)
+      const queryBvid = parsed.kind === 'bv' ? parsed.id! : null
+      const queryAid  = parsed.kind === 'av' ? parsed.id! : null
+      const info = await fetchViewInfo(queryBvid, queryAid)
       thumbnail  = info.pic || ''
       uploader   = info.owner?.name || ''
+      aid        = String(info.aid || '')
+      bvid       = info.bvid || ''
 
       if (info.ugc_season) {
         const season     = info.ugc_season
@@ -376,7 +379,7 @@ async function handleSearch() {
     const maxSec   = Math.max(...videos.map((v) => v.duration || 0))
 
     result.value = {
-      title, type, thumbnail, uploader, videos,
+      title, type, thumbnail, uploader, aid, bvid, videos,
       totalSec, avgSec, minSec, maxSec,
       totalDurLong: fmtDurLong(totalSec),
     }
@@ -441,6 +444,7 @@ function onThumbError(e: Event) {
         <div class="search-tips">
           <span class="tip-label">支持格式：</span>
           <span class="tip-tag" @click="fillExample('BV1GJ411x7h7')">BV号</span>
+          <span class="tip-tag" @click="fillExample('av170001')">AV号</span>
           <span class="tip-tag" @click="fillExample('https://www.bilibili.com/video/BV1GJ411x7h7')">视频链接</span>
           <span class="tip-tag" @click="fillExample('https://space.bilibili.com/UID/channel/collectiondetail?sid=XXXX')">合集页链接</span>
         </div>
@@ -478,11 +482,16 @@ function onThumbError(e: Event) {
               @error="onThumbError"
             />
             <div class="vi-text">
+              <div class="vi-kicker">视频信息</div>
               <div class="vi-title" :title="result.title">{{ result.title }}</div>
-              <div class="vi-badges">
-                <span class="badge badge-type">{{ result.type }}</span>
-                <span class="badge badge-count">共 {{ result.videos.length }} 个视频</span>
-                <span v-if="result.uploader" class="badge badge-up">UP：{{ result.uploader }}</span>
+              <div class="vi-meta-list">
+                <span class="vi-meta-pill vi-meta-primary">{{ result.type }}</span>
+                <span class="vi-meta-pill">{{ result.videos.length }} 个视频</span>
+                <span v-if="result.uploader" class="vi-meta-pill">UP 主 · {{ result.uploader }}</span>
+              </div>
+              <div v-if="result.aid || result.bvid" class="vi-id-list">
+                <span v-if="result.bvid" class="vi-id-chip">BV {{ result.bvid }}</span>
+                <span v-if="result.aid" class="vi-id-chip">AV {{ result.aid }}</span>
               </div>
             </div>
           </div>
@@ -493,7 +502,7 @@ function onThumbError(e: Event) {
           <div class="card-title">时长统计</div>
           <div class="total-hero">
             <div class="total-hero-val">{{ fmtDur(result.totalSec) }}</div>
-            <div class="total-hero-lbl">共 {{ result.totalDurLong }}</div>
+            <div class="total-hero-lbl">原速播放总时长</div>
           </div>
           <div class="stats-grid">
             <div v-for="stat in stats" :key="stat.lbl" class="stat-item">
@@ -757,13 +766,22 @@ body {
   background: var(--bg);
 }
 
-.vi-text { flex: 1; min-width: 0; }
+.vi-text { flex: 1; min-width: 0; padding-top: 2px; }
+
+.vi-kicker {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--blue);
+  margin-bottom: 8px;
+}
 
 .vi-title {
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 1.45;
-  margin-bottom: 10px;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.35;
+  margin-bottom: 12px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
@@ -771,20 +789,38 @@ body {
   overflow: hidden;
 }
 
-.vi-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.vi-meta-list,
+.vi-id-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 
-.badge {
+.vi-meta-list { margin-bottom: 10px; }
+
+.vi-meta-pill,
+.vi-id-chip {
   display: inline-flex;
   align-items: center;
   font-size: 12px;
   font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 20px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
 }
 
-.badge-type  { background: #ffeef4; color: var(--pink); }
-.badge-count { background: #e3f4fb; color: var(--blue); }
-.badge-up    { background: #f3e5f5; color: #7b1fa2; }
+.vi-meta-primary {
+  background: linear-gradient(135deg, #ffeef4 0%, #fef5f8 100%);
+  border-color: #ffd7e4;
+  color: var(--pink);
+}
+
+.vi-id-chip {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0.02em;
+}
 
 /* ===========================
    统计
