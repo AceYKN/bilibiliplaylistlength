@@ -19,38 +19,54 @@
 
 const ALLOWED_HOSTS = ['api.bilibili.com', 'space.bilibili.com']
 
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Max-Age': '86400',
+// 限制允许的前端来源域名，防止任意网站滥用此代理
+// 部署后请将下方域名改为你的实际域名
+const ALLOWED_ORIGINS = [
+  'https://your-username.github.io',
+  'http://localhost:5173',
+  'http://localhost:4173',
+]
+
+function getCorsOrigin(request) {
+  const origin = request.headers.get('Origin') || ''
+  if (ALLOWED_ORIGINS.some(o => origin.startsWith(o))) return origin
+  return ALLOWED_ORIGINS[0] // 不匹配时不返回 *，阻止跨域
 }
 
-function jsonResp(body, status) {
+function corsHeaders(request) {
+  return {
+    'Access-Control-Allow-Origin': getCorsOrigin(request),
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Max-Age': '86400',
+  }
+}
+
+function jsonResp(body, status, request) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+    headers: { 'Content-Type': 'application/json', ...corsHeaders(request) },
   })
 }
 
 async function handleRequest(request) {
   if (request.method === 'OPTIONS') {
-    return new Response(null, { headers: CORS_HEADERS })
+    return new Response(null, { headers: corsHeaders(request) })
   }
 
   const { searchParams } = new URL(request.url)
   const targetRaw = searchParams.get('url')
-  if (!targetRaw) return jsonResp({ error: 'Missing url param' }, 400)
+  if (!targetRaw) return jsonResp({ error: 'Missing url param' }, 400, request)
 
   let target
   try {
     target = new URL(targetRaw)
   } catch (_) {
-    return jsonResp({ error: 'Invalid url param' }, 400)
+    return jsonResp({ error: 'Invalid url param' }, 400, request)
   }
 
   // 安全：仅允许代理 B站 API 域名，防止 SSRF 滥用
   if (!ALLOWED_HOSTS.includes(target.hostname)) {
-    return jsonResp({ error: 'Forbidden host' }, 403)
+    return jsonResp({ error: 'Forbidden host' }, 403, request)
   }
 
   try {
@@ -68,11 +84,11 @@ async function handleRequest(request) {
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
         'Cache-Control': 'no-store',
-        ...CORS_HEADERS,
+        ...corsHeaders(request),
       },
     })
   } catch (err) {
-    return jsonResp({ error: String(err) }, 502)
+    return jsonResp({ error: String(err) }, 502, request)
   }
 }
 
