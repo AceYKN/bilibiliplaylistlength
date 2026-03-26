@@ -435,7 +435,7 @@ function onThumbError(e: Event) {
             @keydown.enter="handleSearch"
           />
           <button class="search-btn" :disabled="loading" @click="handleSearch">
-            {{ loading ? '查询中…' : '查 询' }}
+            {{ loading ? '计算中…' : '计 算' }}
           </button>
         </div>
         <div class="search-tips">
@@ -563,7 +563,7 @@ function onThumbError(e: Event) {
     </main>
 
     <footer class="footer">
-      数据来源于 B站公开 API · 所有计算均在本地浏览器完成 · 仅供学习参考
+      结果仅供估算参考 · 数据来自 B站公开接口 · 不会保存你的输入内容
     </footer>
   </div>
 </template>
@@ -967,6 +967,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--text);
   transition: background 0.2s, border-color 0.2s, transform 0.15s;
   line-height: 1;
   padding: 0;
@@ -1023,6 +1024,7 @@ html.dark .ep-toggle-btn:hover { background: #1a2e38; }
   .header h1   { font-size: 22px; }
 
   .search-row  { flex-direction: column; }
+  .search-input { height: 52px; font-size: 16px; }
   .search-btn  { height: 44px; }
 
   .vi-wrap  { flex-direction: column; }
