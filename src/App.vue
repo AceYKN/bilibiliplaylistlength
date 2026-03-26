@@ -12,6 +12,7 @@ import VideoInfo from './components/VideoInfo.vue'
 import DurationStats from './components/DurationStats.vue'
 import SpeedTable from './components/SpeedTable.vue'
 import RangeCalculator from './components/RangeCalculator.vue'
+import WatchProgress from './components/WatchProgress.vue'
 import WatchPlan from './components/WatchPlan.vue'
 import VideoList from './components/VideoList.vue'
 import ResultSummary from './components/ResultSummary.vue'
@@ -200,6 +201,7 @@ onMounted(() => {
         <DurationStats :result="result" />
         <SpeedTable :result="result" />
         <RangeCalculator v-if="result.videos.length > 1" :result="result" />
+        <WatchProgress v-if="result.videos.length > 1" :result="result" />
         <WatchPlan :result="result" />
         <ResultSummary :result="result" />
         <VideoList :videos="result.videos" />
