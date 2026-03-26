@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="B站视频时长计算器图标">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fb7299" />
+      <stop offset="100%" stop-color="#00a1d6" />
+    </linearGradient>
+  </defs>
+  <rect x="6" y="10" width="52" height="44" rx="12" fill="url(#bg)" />
+  <path d="M22 6L28 14" stroke="#fb7299" stroke-width="4" stroke-linecap="round" />
+  <path d="M42 6L36 14" stroke="#00a1d6" stroke-width="4" stroke-linecap="round" />
+  <rect x="17" y="18" width="30" height="22" rx="6" fill="#ffffff" opacity="0.98" />
+  <path d="M29 23L38 29L29 35V23Z" fill="#fb7299" />
+  <path d="M22 46H42" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity="0.95" />
+</svg>
