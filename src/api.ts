@@ -6,7 +6,6 @@ const CUSTOM_PROXY: string = (import.meta.env.VITE_BILI_PROXY as string | undefi
 
 const CORS_PROXIES = [
   ...(CUSTOM_PROXY ? [CUSTOM_PROXY + '?url='] : []),
-  '',
   'https://corsproxy.io/?url=',
   'https://api.allorigins.win/raw?url=',
 ]

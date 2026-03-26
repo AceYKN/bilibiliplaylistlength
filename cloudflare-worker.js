@@ -19,10 +19,8 @@
 
 const ALLOWED_HOSTS = ['api.bilibili.com', 'space.bilibili.com']
 
-// 限制允许的前端来源域名，防止任意网站滥用此代理
-// 部署后请将下方域名改为你的实际域名
 const ALLOWED_ORIGINS = [
-  'https://your-username.github.io',
+  'https://AceYKN.github.io',
   'http://localhost:5173',
   'http://localhost:4173',
 ]
