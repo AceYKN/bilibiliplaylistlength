@@ -45,10 +45,10 @@ defineEmits<{ search: [] }>()
   font-size: 15px;
   outline: none;
   transition: border-color 0.2s;
-  background: #fafafa;
+  background: var(--input-bg);
   color: var(--text);
 }
-.search-input:focus { border-color: var(--pink); background: #fff; }
+.search-input:focus { border-color: var(--pink); background: var(--input-focus); }
 
 .search-btn {
   height: 48px;
@@ -79,7 +79,7 @@ defineEmits<{ search: [] }>()
 }
 
 .tip-tag {
-  background: #f0f0f0;
+  background: var(--tag-bg);
   padding: 3px 9px;
   border-radius: 4px;
   user-select: none;
@@ -95,9 +95,7 @@ defineEmits<{ search: [] }>()
   line-height: 1.6;
 }
 
-:deep(html.dark) .search-input { background: #262626; }
-:deep(html.dark) .search-input:focus { background: #2e2e2e; }
-:deep(html.dark) .tip-tag { background: #2a2a2a; }
+
 
 @media (max-width: 640px) {
   .search-row  { flex-direction: column; }

@@ -59,14 +59,11 @@ const speedPlans = computed(() => {
   border-radius: 8px;
 }
 
-.speed-row.hl { background: linear-gradient(90deg, #ffeef4 0%, #e3f4fb 100%); }
+.speed-row.hl { background: var(--grad-hero-h); }
 .speed-row.hl .speed-row-rate { color: var(--pink); }
 
 .speed-row-rate { width: 52px; font-size: 13px; font-weight: 700; flex-shrink: 0; }
 .speed-row-dur  { flex: 1; font-size: 14px; font-weight: 600; color: var(--blue); font-variant-numeric: tabular-nums; }
 .speed-row-note { font-size: 12px; color: var(--text-sub); text-align: right; min-width: 80px; }
 
-:deep(html.dark) .speed-row.hl {
-  background: linear-gradient(90deg, #3a1e26 0%, #1a2e38 100%);
-}
 </style>

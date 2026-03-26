@@ -73,7 +73,7 @@ const displayedVideos = computed(() =>
   transition: background 0.15s;
 }
 
-.ep-toggle-btn:hover { background: #e3f4fb; }
+.ep-toggle-btn:hover { background: var(--hover-bg); }
 
 .ep-item {
   display: flex;
@@ -91,5 +91,5 @@ const displayedVideos = computed(() =>
 .ep-link:hover { text-decoration: underline; }
 .ep-dur   { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--pink); white-space: nowrap; flex-shrink: 0; }
 
-:deep(html.dark) .ep-toggle-btn:hover { background: #1a2e38; }
+
 </style>

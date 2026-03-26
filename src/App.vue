@@ -234,6 +234,14 @@ onMounted(() => {
   --shadow:    0 2px 12px rgba(0, 0, 0, 0.08);
   --radius:    14px;
   --radius-sm: 8px;
+  --grad-hero:    linear-gradient(135deg, #ffeef4 0%, #e3f4fb 100%);
+  --grad-hero-h:  linear-gradient(90deg, #ffeef4 0%, #e3f4fb 100%);
+  --grad-copied:  linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+  --input-bg:     #fafafa;
+  --input-focus:  #ffffff;
+  --tag-bg:       #f0f0f0;
+  --error-help-bg: #fff0f0;
+  --hover-bg:     #e3f4fb;
 }
 
 body {
@@ -253,6 +261,14 @@ html.dark {
   --text-sub: #999999;
   --border:   #333333;
   --shadow:   0 2px 12px rgba(0, 0, 0, 0.5);
+  --grad-hero:    linear-gradient(135deg, #3a1e26 0%, #1a2e38 100%);
+  --grad-hero-h:  linear-gradient(90deg, #3a1e26 0%, #1a2e38 100%);
+  --grad-copied:  linear-gradient(135deg, #1a3a1a 0%, #1a3a2a 100%);
+  --input-bg:     #262626;
+  --input-focus:  #2e2e2e;
+  --tag-bg:       #2a2a2a;
+  --error-help-bg: #2a1818;
+  --hover-bg:     #1a2e38;
 }
 </style>
 

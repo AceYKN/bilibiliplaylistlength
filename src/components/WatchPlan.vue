@@ -78,7 +78,7 @@ const dailyResult = computed(() => {
   font-size: 14px;
   font-weight: 600;
   outline: none;
-  background: var(--card);
+  background: var(--input-bg);
   color: var(--text);
   cursor: pointer;
   transition: border-color 0.2s;
@@ -103,7 +103,7 @@ const dailyResult = computed(() => {
   margin: 0 4px;
 }
 
-:deep(html.dark) .plan-select { background: #262626; color: var(--text); }
+
 
 @media (max-width: 640px) {
   .plan-controls { font-size: 13px; }

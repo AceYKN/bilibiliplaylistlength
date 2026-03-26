@@ -72,7 +72,7 @@ async function copyDuration() {
 
 .total-hero {
   text-align: center;
-  background: linear-gradient(135deg, #ffeef4 0%, #e3f4fb 100%);
+  background: var(--grad-hero);
   border-radius: 12px;
   padding: 20px 16px 14px;
   margin-bottom: 12px;
@@ -83,7 +83,7 @@ async function copyDuration() {
 
 .total-hero:hover  { opacity: 0.85; }
 .total-hero:active { transform: scale(0.98); }
-.total-hero.copied { background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); }
+.total-hero.copied { background: var(--grad-copied); }
 
 .total-hero-val {
   font-size: 44px;
@@ -121,10 +121,6 @@ async function copyDuration() {
 }
 
 .stat-lbl { font-size: 12px; color: var(--text-sub); }
-
-:deep(html.dark) .total-hero {
-  background: linear-gradient(135deg, #3a1e26 0%, #1a2e38 100%);
-}
 
 @media (max-width: 640px) {
   .total-hero-val { font-size: 32px; }

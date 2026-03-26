@@ -154,7 +154,7 @@ function selectAll() {
   font-weight: 600;
   text-align: center;
   outline: none;
-  background: var(--card);
+  background: var(--input-bg);
   color: var(--text);
   transition: border-color 0.2s;
   -moz-appearance: textfield;
@@ -175,7 +175,7 @@ function selectAll() {
   font-size: 14px;
   font-weight: 600;
   outline: none;
-  background: var(--card);
+  background: var(--input-bg);
   color: var(--text);
   cursor: pointer;
   transition: border-color 0.2s;
@@ -220,7 +220,7 @@ function selectAll() {
 }
 
 .range-stat-item.main-stat {
-  background: linear-gradient(135deg, #ffeef4 0%, #e3f4fb 100%);
+  background: var(--grad-hero);
 }
 
 .range-stat-val {
@@ -239,11 +239,7 @@ function selectAll() {
 .range-stat-lbl { font-size: 12px; color: var(--text-sub); margin-bottom: 2px; }
 .range-stat-sub { font-size: 11px; color: var(--text-sub); }
 
-:deep(html.dark) .range-stat-item.main-stat {
-  background: linear-gradient(135deg, #3a1e26 0%, #1a2e38 100%);
-}
-:deep(html.dark) .range-input { background: #262626; color: var(--text); }
-:deep(html.dark) .range-select { background: #262626; color: var(--text); }
+
 
 @media (max-width: 640px) {
   .range-stats { grid-template-columns: 1fr; }

@@ -29,7 +29,7 @@ defineProps<{ message: string }>()
 }
 
 .error-help {
-  background: #fff8f8;
+  background: var(--error-help-bg);
   border-radius: 8px;
   padding: 12px 16px;
   font-size: 13px;
@@ -37,5 +37,5 @@ defineProps<{ message: string }>()
   line-height: 1.8;
 }
 
-:deep(html.dark) .error-help { background: #2a1818; }
+
 </style>
