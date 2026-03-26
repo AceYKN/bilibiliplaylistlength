@@ -20,7 +20,7 @@
 const ALLOWED_HOSTS = ['api.bilibili.com', 'space.bilibili.com']
 
 const ALLOWED_ORIGINS = [
-  'https://AceYKN.github.io',
+  'https://aceykn.github.io',
   'http://localhost:5173',
   'http://localhost:4173',
 ]
